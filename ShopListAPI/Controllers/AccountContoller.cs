@@ -22,10 +22,25 @@ public class AccountController : ControllerBase
         _configuration = configuration;
     }
 
-    [HttpPost]
-    public async Task<ActionResult> CreateUser([FromBody] User newUser){
+    [HttpPost("createAccount")]
+    public async Task<ActionResult> CreateAccount([FromBody] User newUser)
+    {
         await _accountService.CreateUserAsync(newUser);
         return Ok();
+    }
+
+    [HttpPost("createToken")]
+    public async Task<ActionResult<Token>> CreateToken([FromBody] User user)
+    {
+        var token = await _accountService.CreateTokenAsync(user);
+        return Ok(token);
+    }
+
+    [HttpGet("refreshToken")]
+    public async Task<ActionResult<Token>> RefreshToken([FromQuery] string refreshToken)
+    {
+        var token = await _accountService.RefreshTokenAsync(refreshToken);
+        return token;
     }
 
     private string GenerateJwt()

@@ -1,5 +1,7 @@
+using System.Security.Authentication;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using ShopListAPI.Helpers;
 using ShopListAPI.Models;
 
 namespace ShopListAPI.Services;
@@ -7,28 +9,61 @@ namespace ShopListAPI.Services;
 public class AccountService
 {
     private readonly IMongoCollection<User> _usersCollection;
+    private readonly IConfiguration _configuration;
 
-    public AccountService(IOptions<DatabaseSettings> storeDatabaseSettings)
+    public AccountService(IOptions<DatabaseSettings> storeDatabaseSettings, IConfiguration configuration)
     {
         var mongoClient = new MongoClient(storeDatabaseSettings.Value.ConnectionString);
         var mongoDatabase = mongoClient.GetDatabase(storeDatabaseSettings.Value.DatabaseName);
         _usersCollection = mongoDatabase.GetCollection<User>(storeDatabaseSettings.Value.UsersCollectionName);
+        _configuration = configuration;
     }
 
     public async Task<List<User>> GetAsync() =>
         await _usersCollection.Find(_ => true).ToListAsync();
 
     public async Task<User?> GetAsync(string id) =>
-        await _usersCollection.Find(p => p.Id == id).FirstOrDefaultAsync();
+        await _usersCollection.Find(u=> u.Id == id).FirstOrDefaultAsync();
 
     public async Task CreateUserAsync(User newUser){
-        var existingUser = await _usersCollection.Find(p => p.Email == newUser.Email || p.Username == newUser.Username).FirstOrDefaultAsync();
+        var existingUser = await _usersCollection.Find(u=> u.Email == newUser.Email || u.Username == newUser.Username).FirstOrDefaultAsync();
+        if(existingUser is not null)
+            throw new InvalidOperationException("User already exists");
         await _usersCollection.InsertOneAsync(newUser);
     }
 
     public async Task UpdateAsync(string id, User updatedUser) =>
-        await _usersCollection.ReplaceOneAsync(p => p.Id == id, updatedUser);
+        await _usersCollection.ReplaceOneAsync(u=> u.Id == id, updatedUser);
 
     public async Task RemoveAsync(string id) =>
-        await _usersCollection.DeleteOneAsync(p => p.Id == id);
+        await _usersCollection.DeleteOneAsync(u=> u.Id == id);
+
+    public async Task<Token> CreateTokenAsync(User user)
+    {
+        var existingUser = await _usersCollection.Find(u=> u.Username == user.Username && u.Password == user.Password).FirstOrDefaultAsync();
+        if(existingUser is null){
+            throw new InvalidCredentialException("Invalid username or password");
+        }
+        TokenHelper tokenHelper = new(_configuration);
+        var token = tokenHelper.CreateAccessToken();
+        var filter = Builders<User>.Filter.Eq("Username", user.Username);
+        var update = Builders<User>.Update.Set("RefreshToken", token.RefreshToken).Set("RefreshTokenExpireDate", token.ExpireDate.AddMinutes(60));
+        await _usersCollection.UpdateOneAsync(filter, update);
+        return token;
+    }
+
+    public async Task<Token> RefreshTokenAsync(string refreshToken)
+    {
+        var existingUser = await _usersCollection.Find(u=> u.RefreshToken == refreshToken && u.RefreshTokenExpireDate > DateTime.Now).FirstOrDefaultAsync();
+        if(existingUser is null){
+            throw new InvalidCredentialException("Invalid refresh token");
+        }
+        TokenHelper tokenHelper = new(_configuration);
+        var token = tokenHelper.CreateAccessToken();
+        var filter = Builders<User>.Filter.Eq("Username", existingUser.Username);
+        var update = Builders<User>.Update.Set("RefreshToken", token.RefreshToken).Set("RefreshTokenExpireDate", token.ExpireDate.AddMinutes(60));
+        await _usersCollection.UpdateOneAsync(filter, update);
+        return token;
+    }
+
 }

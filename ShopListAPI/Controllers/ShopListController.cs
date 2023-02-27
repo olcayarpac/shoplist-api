@@ -12,11 +12,8 @@ namespace ShopListAPI.Controllers;
 [Authorize]
 public class ShopListController : ControllerBase
 {
-    private bool isControllerRunning = false;
-
     public ShopListController()
     {
-        isControllerRunning = true;
     }
 
     [HttpPost]
