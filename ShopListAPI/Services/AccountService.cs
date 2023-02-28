@@ -23,46 +23,52 @@ public class AccountService
         await _usersCollection.Find(_ => true).ToListAsync();
 
     public async Task<User?> GetAsync(string id) =>
-        await _usersCollection.Find(u=> u.Id == id).FirstOrDefaultAsync();
+        await _usersCollection.Find(u => u.Id == id).FirstOrDefaultAsync();
 
-    public async Task CreateUserAsync(User newUser){
-        var existingUser = await _usersCollection.Find(u=> u.Email == newUser.Email || u.Username == newUser.Username).FirstOrDefaultAsync();
-        if(existingUser is not null)
+    public async Task CreateUserAsync(User newUser)
+    {
+        var existingUser = await _usersCollection.Find(u => u.Email == newUser.Email || u.Username == newUser.Username).FirstOrDefaultAsync();
+        if (existingUser is not null)
             throw new InvalidOperationException("User already exists");
         await _usersCollection.InsertOneAsync(newUser);
     }
 
     public async Task UpdateAsync(string id, User updatedUser) =>
-        await _usersCollection.ReplaceOneAsync(u=> u.Id == id, updatedUser);
+        await _usersCollection.ReplaceOneAsync(u => u.Id == id, updatedUser);
 
     public async Task RemoveAsync(string id) =>
-        await _usersCollection.DeleteOneAsync(u=> u.Id == id);
+        await _usersCollection.DeleteOneAsync(u => u.Id == id);
 
     public async Task<Token> CreateTokenAsync(User user)
     {
-        var existingUser = await _usersCollection.Find(u=> u.Username == user.Username && u.Password == user.Password).FirstOrDefaultAsync();
-        if(existingUser is null){
+        var existingUser = await _usersCollection.Find(u => u.Username == user.Username && u.Password == user.Password).FirstOrDefaultAsync();
+        if (existingUser is null)
+        {
             throw new InvalidCredentialException("Invalid username or password");
         }
         TokenHelper tokenHelper = new(_configuration);
         var token = tokenHelper.CreateAccessToken();
-        var filter = Builders<User>.Filter.Eq("Username", user.Username);
-        var update = Builders<User>.Update.Set("RefreshToken", token.RefreshToken).Set("RefreshTokenExpireDate", token.ExpireDate.AddMinutes(60));
-        await _usersCollection.UpdateOneAsync(filter, update);
+        await UpdateRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
+    }
+
+    public async Task UpdateRefreshTokenAsync(string userId, string refreshToken, DateTime expireDate)
+    {
+        var filter = Builders<User>.Filter.Eq("Id", userId);
+        var update = Builders<User>.Update.Set("RefreshToken", refreshToken).Set("RefreshTokenExpireDate", expireDate);
+        await _usersCollection.UpdateOneAsync(filter, update);
     }
 
     public async Task<Token> RefreshTokenAsync(string refreshToken)
     {
-        var existingUser = await _usersCollection.Find(u=> u.RefreshToken == refreshToken && u.RefreshTokenExpireDate > DateTime.Now).FirstOrDefaultAsync();
-        if(existingUser is null){
+        var existingUser = await _usersCollection.Find(u => u.RefreshToken == refreshToken && u.RefreshTokenExpireDate > DateTime.Now).FirstOrDefaultAsync();
+        if (existingUser is null)
+        {
             throw new InvalidCredentialException("Invalid refresh token");
         }
         TokenHelper tokenHelper = new(_configuration);
         var token = tokenHelper.CreateAccessToken();
-        var filter = Builders<User>.Filter.Eq("Username", existingUser.Username);
-        var update = Builders<User>.Update.Set("RefreshToken", token.RefreshToken).Set("RefreshTokenExpireDate", token.ExpireDate.AddMinutes(60));
-        await _usersCollection.UpdateOneAsync(filter, update);
+        await UpdateRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
     }
 
