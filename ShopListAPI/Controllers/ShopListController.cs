@@ -16,8 +16,8 @@ public class ShopListController : ControllerBase
     {
     }
 
-    [HttpPost]
-    public ActionResult Post()
+    [HttpGet]
+    public ActionResult GetShopLists()
     {
         return Ok();
     }

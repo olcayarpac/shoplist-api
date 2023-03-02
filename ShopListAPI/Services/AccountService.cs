@@ -48,11 +48,11 @@ public class AccountService
         }
         TokenHelper tokenHelper = new(_configuration);
         var token = tokenHelper.CreateAccessToken();
-        await UpdateRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
+        await UpdateUserRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
     }
 
-    public async Task UpdateRefreshTokenAsync(string userId, string refreshToken, DateTime expireDate)
+    public async Task UpdateUserRefreshTokenAsync(string userId, string refreshToken, DateTime expireDate)
     {
         var filter = Builders<User>.Filter.Eq("Id", userId);
         var update = Builders<User>.Update.Set("RefreshToken", refreshToken).Set("RefreshTokenExpireDate", expireDate);
@@ -68,8 +68,7 @@ public class AccountService
         }
         TokenHelper tokenHelper = new(_configuration);
         var token = tokenHelper.CreateAccessToken();
-        await UpdateRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
+        await UpdateUserRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
     }
-
 }
