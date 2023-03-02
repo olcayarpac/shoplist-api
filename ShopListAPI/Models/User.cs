@@ -13,6 +13,7 @@ public class User
     public string? Username { get; set; }
     public string? Password { get; set; }
     public string? Email { get; set; }
+    public List<string> ShopListIds {get;set;} = new List<string>();
     public string? RefreshToken {get; set;}
     public DateTime RefreshTokenExpireDate {get; set;}
 }

@@ -4,6 +4,8 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using ShopListAPI.Models;
+using ShopListAPI.Services;
 
 namespace ShopListAPI.Controllers;
 
@@ -12,19 +14,23 @@ namespace ShopListAPI.Controllers;
 [Authorize]
 public class ShopListController : ControllerBase
 {
-    public ShopListController()
+    private readonly ShopListService _shopListService;
+    public ShopListController(ShopListService shopListService)
     {
+        _shopListService = shopListService;
     }
 
     [HttpGet]
-    public ActionResult GetShopLists()
+    public async Task<ActionResult> GetShopLists([FromQuery] string userId)
     {
-        return Ok();
+        var shopList = await _shopListService.GetShopListsByUserId(userId);
+        return Ok(shopList);
     }
 
-    [HttpPost("post2")]
-    public ActionResult Post2()
+    [HttpPost("createShopList")]
+    public async Task<ActionResult> CreateShopList([FromBody] ShopList newShopList)
     {
+        await _shopListService.CreateShopList(newShopList);
         return Ok();
     }
 

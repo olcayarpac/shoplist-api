@@ -19,7 +19,7 @@ public class TokenHelper
         SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Token:SecurityKey"]));
         SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        token.ExpireDate = DateTime.Now.AddMinutes(30);
+        token.ExpireDate = DateTime.Now.AddHours(3);
         JwtSecurityToken securityToken = new JwtSecurityToken(
             issuer: _configuration["Token:Issuer"],
             audience: _configuration["Token:Audience"],
