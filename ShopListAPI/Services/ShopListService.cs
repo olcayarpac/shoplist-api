@@ -1,5 +1,6 @@
 using System.Security.Authentication;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using ShopListAPI.Helpers;
 using ShopListAPI.Models;
@@ -21,16 +22,18 @@ public class ShopListService
         _configuration = configuration;
     }
 
-    public async Task<List<string>> GetShopListsByUserId(string userId)
+    public async Task<List<ShopList>> GetShopListsByUserId(string userId)
     {
         var user =  await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
         if(user is null){
             throw new MongoInternalException("User not found");
         }
         else if(user.ShopListIds is null){
-            return new List<string>();
+            return new List<ShopList>();
         }
-        return user.ShopListIds;
+        var filter = Builders<ShopList>.Filter.In("Id", user.ShopListIds);
+        var shopLists = await _shopListsCollection.Find(filter).ToListAsync();
+        return shopLists;
     }
 
     public async Task CreateShopList(ShopList newShopList)
@@ -38,6 +41,9 @@ public class ShopListService
         var user = await _usersCollection.Find(u => u.Id == newShopList.OwnerId).FirstOrDefaultAsync();
         if (user is null){
             throw new NullReferenceException("User id is not valid");
+        }
+        foreach(var shopListItem in newShopList.ListItems){
+            shopListItem.Id = ObjectId.GenerateNewId().ToString();
         }
         await _shopListsCollection.InsertOneAsync(newShopList);
         if(newShopList.Id is null){
@@ -47,4 +53,9 @@ public class ShopListService
         await _usersCollection.UpdateOneAsync(Builders<User>.Filter.Eq("Id", user.Id),Builders<User>.Update.Push("ShopListIds",newShopList.Id));
     }
 
+    public async Task InsertListItem(string listId, ListItem newItem)
+    {
+        newItem.Id = ObjectId.GenerateNewId().ToString();
+        await _shopListsCollection.UpdateOneAsync(Builders<ShopList>.Filter.Eq("Id", listId),Builders<ShopList>.Update.Push("ListItems",newItem));
+    }
 }

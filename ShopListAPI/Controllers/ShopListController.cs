@@ -20,6 +20,14 @@ public class ShopListController : ControllerBase
         _shopListService = shopListService;
     }
 
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult> GetShopListById([FromRoute] string listId)
+    {
+        var shopList = await _shopListService.GetShopListsByUserId(listId);
+        return Ok(shopList);
+    }
+
     [HttpGet]
     public async Task<ActionResult> GetShopLists([FromQuery] string userId)
     {
@@ -31,7 +39,13 @@ public class ShopListController : ControllerBase
     public async Task<ActionResult> CreateShopList([FromBody] ShopList newShopList)
     {
         await _shopListService.CreateShopList(newShopList);
-        return Ok();
+        return Ok(newShopList);
     }
 
+    [HttpPost("{listId}/createListItem")]
+    public async Task<ActionResult> CreateListItem([FromRoute] string listId, [FromBody] ListItem newItem)
+    {
+        await _shopListService.InsertListItem(listId, newItem);
+        return Ok(newItem);
+    }
 }

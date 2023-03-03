@@ -24,7 +24,7 @@ public class AccountController : ControllerBase
     public async Task<ActionResult> CreateAccount([FromBody] User newUser)
     {
         await _accountService.CreateUserAsync(newUser);
-        return Ok();
+        return Ok(newUser);
     }
 
     [HttpPost("login")]
