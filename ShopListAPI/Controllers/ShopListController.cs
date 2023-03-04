@@ -42,10 +42,24 @@ public class ShopListController : ControllerBase
         return Ok(newShopList);
     }
 
+    [HttpDelete("{listId}/deleteShopList")]
+    public async Task<ActionResult> DeleteListItem([FromRoute] string listId)
+    {
+        await _shopListService.DeleteShopList(listId);
+        return Ok();
+    }
+
     [HttpPost("{listId}/createListItem")]
     public async Task<ActionResult> CreateListItem([FromRoute] string listId, [FromBody] ListItem newItem)
     {
         await _shopListService.InsertListItem(listId, newItem);
         return Ok(newItem);
+    }
+
+    [HttpDelete("{listId}/deleteListItem")]
+    public async Task<ActionResult> DeleteListItem([FromRoute] string listId, [FromQuery] string itemId)
+    {
+        await _shopListService.DeleteListItem(listId, itemId);
+        return Ok();
     }
 }

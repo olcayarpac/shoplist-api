@@ -1,21 +1,29 @@
 using System.Net;
 using System.Diagnostics;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Options;
+using ShopListAPI.Models;
+using MongoDB.Driver;
 
 namespace StoreAPI.Middlewares
 {
     public class CustomExceptionMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly IMongoCollection<APILog> _APILogsCollection;
 
-        public CustomExceptionMiddleware(RequestDelegate next)
+        public CustomExceptionMiddleware(RequestDelegate next, IOptions<DatabaseSettings> storeDatabaseSettings)
         {
             _next = next;
+            var mongoClient = new MongoClient(storeDatabaseSettings.Value.ConnectionString);
+            var mongoDatabase = mongoClient.GetDatabase(storeDatabaseSettings.Value.DatabaseName);
+            _APILogsCollection = mongoDatabase.GetCollection<APILog>(storeDatabaseSettings.Value.APILogsCollectionName);
         }
 
         public async Task Invoke(HttpContext context)
         {
             var watch = Stopwatch.StartNew();
+            var requestTime = DateTime.Now;
             try
             {
                 string message = "[Request]  HTTP " + context.Request.Method + " - " + context.Request.Path;
@@ -26,9 +34,14 @@ namespace StoreAPI.Middlewares
                     + context.Response.StatusCode + " in " + watch.Elapsed.TotalMilliseconds + "ms";
                 Console.WriteLine(message);
             }
-            catch(Exception ex){
+            catch (Exception ex)
+            {
                 watch.Stop();
                 await HandleException(context, ex, watch);
+            }
+            finally
+            {
+                WriteLogToDB(context, requestTime, watch);
             }
         }
 
@@ -39,8 +52,19 @@ namespace StoreAPI.Middlewares
             var message = "[Error] HTTP " + context.Request.Method + " - " + context.Request.Path + " Error message "
                     + ex.Message + " in " + watch.Elapsed.TotalMilliseconds + "ms";
             Console.WriteLine(message);
-            var result = JsonConvert.SerializeObject(new {error = ex.Message}, Formatting.None);
+            var result = JsonConvert.SerializeObject(new { error = ex.Message }, Formatting.None);
             return context.Response.WriteAsync(result);
+        }
+
+        private void WriteLogToDB(HttpContext context, DateTime requestTime, Stopwatch responseWatcher)
+        {
+            APILog apiLog = new APILog();
+            apiLog.Endpoint = context.Request.Path;
+            apiLog.RequestTime = requestTime.ToString();
+            apiLog.ResponseDuration = responseWatcher.Elapsed.TotalMilliseconds.ToString();
+            apiLog.ResponseStatus = context.Response.StatusCode.ToString();
+            apiLog.RequestMethod = context.Request.Method;
+            _APILogsCollection.InsertOneAsync(apiLog);
         }
     }
 
