@@ -62,4 +62,12 @@ public class ShopListController : ControllerBase
         await _shopListService.DeleteListItem(listId, itemId);
         return Ok();
     }
+
+    [HttpPost("{listId}/{itemId}/updateItemStatus")]
+    public async Task<ActionResult> MarkListItemAsDone([FromRoute] string listId, [FromRoute] string itemId, [FromQuery] bool isDone)
+    {
+        var resultList = await _shopListService.UpdateItemDoneStatus(listId, itemId, isDone);
+        if(resultList.IsDone == true) return Ok("List updated as done");
+        return Ok();
+    }
 }

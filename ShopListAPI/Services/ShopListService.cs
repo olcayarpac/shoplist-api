@@ -44,7 +44,7 @@ public class ShopListService
         var user = await _usersCollection.Find(u => u.Id == newShopList.OwnerId).FirstOrDefaultAsync();
         if (user is null)
         {
-            throw new NullReferenceException("User id is not valid");
+            throw new MongoInternalException("User id is not valid");
         }
         foreach (var shopListItem in newShopList.ListItems)
         {
@@ -57,6 +57,17 @@ public class ShopListService
         }
         user.ShopListIds.Add(newShopList.Id);
         await _usersCollection.UpdateOneAsync(Builders<User>.Filter.Eq("Id", user.Id), Builders<User>.Update.Push("ShopListIds", newShopList.Id));
+    }
+
+    public async Task<ShopList> GetListById(string listId)
+    {
+        var shopList = await _shopListsCollection.Find(list => list.Id == listId).FirstOrDefaultAsync();
+        if (shopList is null)
+        {
+            throw new MongoInternalException("List id is not valid");
+        }
+        return shopList;
+
     }
 
     public async Task InsertListItem(string listId, ListItem newItem)
@@ -75,5 +86,27 @@ public class ShopListService
     public async Task DeleteShopList(string listId)
     {
         await _shopListsCollection.DeleteOneAsync(Builders<ShopList>.Filter.Eq("Id", listId));
+    }
+
+    public async Task<ShopList> UpdateItemDoneStatus(string listId, string itemId, bool isDone)
+    {
+        var filter = Builders<ShopList>.Filter.Where(list => list.Id == listId && list.ListItems.Any(i => i.Id == itemId));
+        var update = Builders<ShopList>.Update.Set("ListItems.$.IsDone", isDone);
+        var result = await _shopListsCollection.UpdateOneAsync(filter, update);
+        var resultList = await CheckAndUpdateListDoneStatus(listId);
+        return resultList;
+    }
+
+    public async Task<ShopList> CheckAndUpdateListDoneStatus(string listId)
+    {
+        bool isDone = true;
+        var resultList = await GetListById(listId);
+        foreach (var listItem in resultList.ListItems)
+        {
+            if (!listItem.IsDone) isDone = false;
+        }
+        var filter = Builders<ShopList>.Filter.Where(list => list.Id == listId);
+        var update = Builders<ShopList>.Update.Set("IsDone", isDone);
+        return await _shopListsCollection.FindOneAndUpdateAsync(filter, update);
     }
 }
