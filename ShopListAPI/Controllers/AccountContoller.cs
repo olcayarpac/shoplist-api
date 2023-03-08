@@ -42,12 +42,8 @@ public class AccountController : ControllerBase
     }
 
     [HttpGet("sendRabbitMqMessage")]
-    public OkResult SendRabbitMqMessage([FromQuery] string msg)
+    public OkResult SendRabbitMqMessage()
     {
-        RabbitMQSender sender = new RabbitMQSender();
-        sender.SendMessage(msg);
         return Ok();
     }
-
-    
 }

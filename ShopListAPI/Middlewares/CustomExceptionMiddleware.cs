@@ -4,6 +4,8 @@ using Newtonsoft.Json;
 using Microsoft.Extensions.Options;
 using ShopListAPI.Models;
 using MongoDB.Driver;
+using ShopListAPI.Services;
+
 
 namespace StoreAPI.Middlewares
 {
@@ -11,6 +13,7 @@ namespace StoreAPI.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly IMongoCollection<APILog> _APILogsCollection;
+        private readonly RabbitMQPublisher _rabbitMQPublisher;
 
         public CustomExceptionMiddleware(RequestDelegate next, IOptions<DatabaseSettings> storeDatabaseSettings)
         {
@@ -18,6 +21,7 @@ namespace StoreAPI.Middlewares
             var mongoClient = new MongoClient(storeDatabaseSettings.Value.ConnectionString);
             var mongoDatabase = mongoClient.GetDatabase(storeDatabaseSettings.Value.DatabaseName);
             _APILogsCollection = mongoDatabase.GetCollection<APILog>(storeDatabaseSettings.Value.APILogsCollectionName);
+            _rabbitMQPublisher = new RabbitMQPublisher();
         }
 
         public async Task Invoke(HttpContext context)
@@ -65,6 +69,7 @@ namespace StoreAPI.Middlewares
             apiLog.ResponseStatus = context.Response.StatusCode.ToString();
             apiLog.RequestMethod = context.Request.Method;
             _APILogsCollection.InsertOneAsync(apiLog);
+            _rabbitMQPublisher.Publish("apiLogs", apiLog);
         }
     }
 
