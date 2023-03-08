@@ -40,4 +40,14 @@ public class AccountController : ControllerBase
         var token = await _accountService.RefreshTokenAsync(refreshToken);
         return token;
     }
+
+    [HttpGet("sendRabbitMqMessage")]
+    public OkResult SendRabbitMqMessage([FromQuery] string msg)
+    {
+        RabbitMQSender sender = new RabbitMQSender();
+        sender.SendMessage(msg);
+        return Ok();
+    }
+
+    
 }
