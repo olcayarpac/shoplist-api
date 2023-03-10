@@ -7,7 +7,6 @@ namespace ShopListAPI.Services;
 
 public class RabbitMQService
 {
-    private readonly IModel _channel = null!;
     private readonly string _hostName = "localhost";
     private readonly int _port = 5672;
 
@@ -20,23 +19,6 @@ public class RabbitMQService
         };
 
         return connectionFactory.CreateConnection();
-    }
-
-
-    public void SendMessage(string message)
-    {
-        _channel.QueueDeclare(queue: "hello",
-                            durable: false,
-                            exclusive: false,
-                            autoDelete: false,
-                            arguments: null);
-
-        var body = Encoding.UTF8.GetBytes(message);
-
-        _channel.BasicPublish(exchange: string.Empty,
-                            routingKey: "hello",
-                            basicProperties: null,
-                            body: body);
     }
 }
 
