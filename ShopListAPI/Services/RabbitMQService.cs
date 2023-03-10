@@ -10,15 +10,23 @@ public class RabbitMQService
     private readonly string _hostName = "localhost";
     private readonly int _port = 5672;
 
-    public IConnection GetRabbitMQConnection()
+    public IConnection? GetRabbitMQConnection()
     {
-        ConnectionFactory connectionFactory = new ConnectionFactory()
+        ConnectionFactory connectionFactory = new()
         {
             HostName = _hostName,
             Port = _port
         };
 
-        return connectionFactory.CreateConnection();
+        try
+        {
+            return connectionFactory.CreateConnection();
+        }
+        catch
+        {
+            Console.WriteLine("Error occured while connecting RabbitMq");
+        }
+        return null;
     }
 }
 
@@ -32,24 +40,33 @@ public class RabbitMQPublisher
     {
         _rabbitMQService = new RabbitMQService();
         _connection = _rabbitMQService.GetRabbitMQConnection();
-        _channel = _connection.CreateModel();
+        if (_connection != null)
+            _channel = _connection.CreateModel();
     }
 
     public void Publish(string queueName, APILog apiLog)
     {
-        _channel.QueueDeclare(
-            queue: queueName,
-            durable: false,
-            exclusive: false,
-            autoDelete: false,
-            arguments: null);
+        try
+        {
 
-        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(apiLog));
+            _channel.QueueDeclare(
+                queue: queueName,
+                durable: false,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
 
-        _channel.BasicPublish(
-            exchange: string.Empty,
-            routingKey: queueName,
-            basicProperties: null,
-            body: body);
+            var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(apiLog));
+
+            _channel.BasicPublish(
+                exchange: string.Empty,
+                routingKey: queueName,
+                basicProperties: null,
+                body: body);
+        }
+        catch
+        {
+            Console.WriteLine("Cannot publish to rabbitmq!");
+        }
     }
 }
