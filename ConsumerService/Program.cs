@@ -18,8 +18,7 @@ var factory = new ConnectionFactory
 //Create the RabbitMQ connection using connection factory details as i mentioned above
 var connection = factory.CreateConnection();
 //Here we create channel with session and model
-using
-var channel = connection.CreateModel();
+using var channel = connection.CreateModel();
 //declare the queue after mentioning name and a few property related to that
 channel.QueueDeclare("apiLogs", exclusive: false, durable: false, autoDelete: false, arguments: null);
 //Set Event object which listen message from chanel which is sent by producer
