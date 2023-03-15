@@ -1,9 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using ShopListAPI.Models;
 using ShopListAPI.Services;
 
@@ -30,7 +25,12 @@ public class AccountController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<Token>> Login([FromBody] User user)
     {
-        var token = await _accountService.CreateTokenAsync(user);
+        var existingUser = await _accountService.CheckCredentials(user);
+        if (existingUser is null)
+            return Unauthorized("Invalid credentials");
+        var token = await _accountService.CreateTokenAsync(existingUser.Id);
+
+        Response.Headers.Add("Set-Cookie", "userid="+existingUser.Id+";");
         return Ok(token);
     }
 

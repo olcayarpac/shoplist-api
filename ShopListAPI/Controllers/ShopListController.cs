@@ -63,9 +63,15 @@ public class ShopListController : ControllerBase
         return Ok();
     }
 
-    [HttpPost("{listId}/{itemId}/updateItemStatus")]
+    [HttpPut("{listId}/{itemId}/updateItemStatus")]
     public async Task<ActionResult> MarkListItemAsDone([FromRoute] string listId, [FromRoute] string itemId, [FromQuery] bool isDone)
     {
+        var userId = Request.Cookies["userid"];
+        if(userId is null)
+            return Unauthorized();
+        var check = await _shopListService.CheckUserHasList(userId, listId);
+        if(!check)
+            return NotFound("Invalid list id");
         var resultList = await _shopListService.UpdateItemDoneStatus(listId, itemId, isDone);
         if(resultList.IsDone == true) return Ok("List updated as done");
         return Ok();

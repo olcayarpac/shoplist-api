@@ -28,13 +28,14 @@ consumer.Received += (model, eventArgs) =>
     var body = eventArgs.Body.ToArray();
     var message = Encoding.UTF8.GetString(body);
     Console.WriteLine($"Product message received: {message}");
-    _APILogsCollection.InsertOne(JsonConvert.DeserializeObject<APILog>(message));
+    var messageJson = JsonConvert.DeserializeObject<APILog>(message);
+    if(messageJson is not null){
+        _APILogsCollection.InsertOne(messageJson);
+    }
 };
 //read the message
 channel.BasicConsume(queue: "apiLogs", autoAck: true, consumer: consumer);
 Console.ReadKey();
-
-
 
 public class APILog
 {

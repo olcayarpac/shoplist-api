@@ -39,16 +39,22 @@ public class AccountService
     public async Task RemoveAsync(string id) =>
         await _usersCollection.DeleteOneAsync(u => u.Id == id);
 
-    public async Task<Token> CreateTokenAsync(User user)
+    public async Task<User> CheckCredentials(User user)
     {
         var existingUser = await _usersCollection.Find(u => u.Username == user.Username && u.Password == user.Password).FirstOrDefaultAsync();
         if (existingUser is null)
         {
             throw new InvalidCredentialException("Invalid username or password");
         }
+
+        return existingUser;
+    }
+    public async Task<Token> CreateTokenAsync(string userId)
+    {
         TokenHelper tokenHelper = new(_configuration);
         var token = tokenHelper.CreateAccessToken();
-        await UpdateUserRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
+        await UpdateUserRefreshTokenAsync(userId, token.RefreshToken, token.ExpireDate.AddHours(12));
+
         return token;
     }
 
@@ -71,5 +77,4 @@ public class AccountService
         await UpdateUserRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
     }
-    
 }

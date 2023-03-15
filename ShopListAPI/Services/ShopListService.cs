@@ -35,8 +35,7 @@ public class ShopListService
             return new List<ShopList>();
         }
         var filter = Builders<ShopList>.Filter.In("Id", user.ShopListIds);
-        var shopLists = await _shopListsCollection.Find(filter).ToListAsync();
-        return shopLists;
+        return await _shopListsCollection.Find(filter).ToListAsync();
     }
 
     public async Task CreateShopList(ShopList newShopList)
@@ -93,8 +92,7 @@ public class ShopListService
         var filter = Builders<ShopList>.Filter.Where(list => list.Id == listId && list.ListItems.Any(i => i.Id == itemId));
         var update = Builders<ShopList>.Update.Set("ListItems.$.IsDone", isDone);
         var result = await _shopListsCollection.UpdateOneAsync(filter, update);
-        var resultList = await CheckAndUpdateListDoneStatus(listId);
-        return resultList;
+        return await CheckAndUpdateListDoneStatus(listId);
     }
 
     public async Task<ShopList> CheckAndUpdateListDoneStatus(string listId)
@@ -108,5 +106,20 @@ public class ShopListService
         var filter = Builders<ShopList>.Filter.Where(list => list.Id == listId);
         var update = Builders<ShopList>.Update.Set("IsDone", isDone);
         return await _shopListsCollection.FindOneAndUpdateAsync(filter, update);
+    }
+
+    public async Task<bool> CheckUserHasList(string userId, string listId)
+    {
+        var user = await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
+        if (user is null)
+        {
+            throw new Exception("User not found");
+        }
+        else if (user.ShopListIds.Contains(listId))
+        {
+            return true;
+        }
+
+        return false;
     }
 }

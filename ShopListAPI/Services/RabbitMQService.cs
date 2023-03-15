@@ -32,9 +32,9 @@ public class RabbitMQService
 
 public class RabbitMQPublisher
 {
-    private readonly RabbitMQService _rabbitMQService;
-    private readonly IConnection _connection;
-    private readonly IModel _channel;
+    private readonly RabbitMQService? _rabbitMQService;
+    private readonly IConnection? _connection;
+    private readonly IModel? _channel;
 
     public RabbitMQPublisher()
     {
@@ -49,7 +49,7 @@ public class RabbitMQPublisher
         try
         {
 
-            _channel.QueueDeclare(
+            _channel?.QueueDeclare(
                 queue: queueName,
                 durable: false,
                 exclusive: false,
