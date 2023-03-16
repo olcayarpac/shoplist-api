@@ -52,9 +52,8 @@ public class AccountService
     public async Task<Token> CreateTokenAsync(string userId)
     {
         TokenHelper tokenHelper = new(_configuration);
-        var token = tokenHelper.CreateAccessToken();
+        var token = tokenHelper.CreateAccessToken(userId);
         await UpdateUserRefreshTokenAsync(userId, token.RefreshToken, token.ExpireDate.AddHours(12));
-
         return token;
     }
 
@@ -73,7 +72,7 @@ public class AccountService
             throw new InvalidCredentialException("Invalid refresh token");
         }
         TokenHelper tokenHelper = new(_configuration);
-        var token = tokenHelper.CreateAccessToken();
+        var token = tokenHelper.CreateAccessToken(existingUser.Id);
         await UpdateUserRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
     }

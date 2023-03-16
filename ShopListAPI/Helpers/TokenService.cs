@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using ShopListAPI.Models;
@@ -13,28 +14,29 @@ public class TokenHelper
         _configuration = configuration;
     }
 
-    public Token CreateAccessToken()
+    public Token CreateAccessToken(string userId)
     {
-        Token token = new Token();
-        SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Token:SecurityKey"]));
-        SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        var tokenModel = new Token();
+        var key = Encoding.ASCII.GetBytes(_configuration["Jwt:SecurityKey"]);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new[] { new Claim("Id", userId) }),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+            Issuer = _configuration["Jwt:Issuer"],
+            Audience = _configuration["Jwt:Audience"]
+        };
 
-        token.ExpireDate = DateTime.Now.AddHours(3);
-        JwtSecurityToken securityToken = new JwtSecurityToken(
-            issuer: _configuration["Token:Issuer"],
-            audience: _configuration["Token:Audience"],
-            notBefore: DateTime.Now,
-            expires: token.ExpireDate,
-            signingCredentials:credentials 
-        );
-
-        JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-        token.AccessToken = tokenHandler.WriteToken(securityToken);
-        token.RefreshToken = CreateRefreshToken();
-        return token;
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        tokenModel.AccessToken = tokenHandler.WriteToken(token);
+        tokenModel.ExpireDate = token.ValidTo;
+        tokenModel.RefreshToken = CreateRefreshToken();
+        return tokenModel;
     }
 
-    public string CreateRefreshToken(){
+    public string CreateRefreshToken()
+    {
         return Guid.NewGuid().ToString();
     }
 }

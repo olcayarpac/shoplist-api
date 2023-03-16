@@ -4,7 +4,6 @@ using System.Text;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 
-
 var mongoClient = new MongoClient("mongodb://localhost:27017");
 var mongoDatabase = mongoClient.GetDatabase("shopListDB");
 var _APILogsCollection = mongoDatabase.GetCollection<APILog>("apiLogs");

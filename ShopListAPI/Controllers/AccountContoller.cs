@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShopListAPI.Models;
 using ShopListAPI.Services;
@@ -15,6 +16,7 @@ public class AccountController : ControllerBase
         _accountService = accountService;
     }
 
+    [AllowAnonymous]
     [HttpPost("createAccount")]
     public async Task<ActionResult> CreateAccount([FromBody] User newUser)
     {
@@ -22,6 +24,7 @@ public class AccountController : ControllerBase
         return Ok(newUser);
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<Token>> Login([FromBody] User user)
     {
@@ -30,10 +33,11 @@ public class AccountController : ControllerBase
             return Unauthorized("Invalid credentials");
         var token = await _accountService.CreateTokenAsync(existingUser.Id);
 
-        Response.Headers.Add("Set-Cookie", "userid="+existingUser.Id+";");
+        Response.Headers.Add("Set-Cookie", "userid=" + existingUser.Id + ";");
         return Ok(token);
     }
 
+    [Authorize(Roles = "User,Admin")]
     [HttpGet("refreshToken")]
     public async Task<ActionResult<Token>> RefreshToken([FromQuery] string refreshToken)
     {

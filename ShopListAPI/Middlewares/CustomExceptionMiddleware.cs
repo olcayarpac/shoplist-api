@@ -6,7 +6,6 @@ using ShopListAPI.Models;
 using MongoDB.Driver;
 using ShopListAPI.Services;
 
-
 namespace StoreAPI.Middlewares
 {
     public class CustomExceptionMiddleware
