@@ -31,13 +31,13 @@ public class AccountController : ControllerBase
         var existingUser = await _accountService.CheckCredentials(user);
         if (existingUser is null)
             return Unauthorized("Invalid credentials");
-        var token = await _accountService.CreateTokenAsync(existingUser.Id);
+        var token = await _accountService.CreateTokenAsync(existingUser);
 
         Response.Headers.Add("Set-Cookie", "userid=" + existingUser.Id + ";");
         return Ok(token);
     }
 
-    [Authorize(Roles = "User,Admin")]
+    [AllowAnonymous]
     [HttpGet("refreshToken")]
     public async Task<ActionResult<Token>> RefreshToken([FromQuery] string refreshToken)
     {

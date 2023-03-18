@@ -7,7 +7,7 @@ public class User
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string? Id { get; set; }
+    public string Id { get; set; } = "";
 
     [BsonElement("Username")]
     public string? Username { get; set; }
@@ -16,6 +16,6 @@ public class User
     public List<string> ShopListIds { get; set; } = new List<string>();
     public string? RefreshToken { get; set; }
     public DateTime RefreshTokenExpireDate { get; set; }
-    public Role Role { get; set; }
+    public string Role { get; set; } = "User";
 
 }

@@ -2,17 +2,21 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using ShopListAPI.Helpers;
 using ShopListAPI.Models;
 using ShopListAPI.Services;
 using StoreAPI.Middlewares;
+using WebApi.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("DatabaseSettings"));
 builder.Services.AddSingleton<AccountService>();
 builder.Services.AddSingleton<ShopListService>();
+builder.Services.AddScoped<TokenHelper>();
 
 // Add services to the container.
+/*
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -32,8 +36,9 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true
     };
 });
+*/
 
-builder.Services.AddAuthorization();
+//builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -49,11 +54,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseAuthentication();
+//app.UseAuthentication();
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseMiddleware<AuthMiddleware>();
 
 app.UseCustomExceptionMiddleware();
 

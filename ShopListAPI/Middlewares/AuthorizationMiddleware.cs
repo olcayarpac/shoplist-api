@@ -1,57 +1,33 @@
-using System.Net;
-using System.Diagnostics;
-using Newtonsoft.Json;
+namespace WebApi.Middlewares;
+
 using Microsoft.Extensions.Options;
+using ShopListAPI.Helpers;
 using ShopListAPI.Models;
-using MongoDB.Driver;
 using ShopListAPI.Services;
 
-namespace StoreAPI.Middlewares
+public class AuthMiddleware
 {
-    public class AuthorizationMiddleware
+    private readonly RequestDelegate _next;
+    private readonly AccountService _accountService;
+    //private readonly TokenHelper _tokenHelper;
+
+    public AuthMiddleware(RequestDelegate next, AccountService accountService)
     {
-        private readonly RequestDelegate _next;
-        private readonly IMongoCollection<User> _usersCollection;
-        private readonly RabbitMQPublisher _rabbitMQPublisher;
-
-        public AuthorizationMiddleware(RequestDelegate next, IOptions<DatabaseSettings> storeDatabaseSettings)
-        {
-            _next = next;
-            var mongoClient = new MongoClient(storeDatabaseSettings.Value.ConnectionString);
-            var mongoDatabase = mongoClient.GetDatabase(storeDatabaseSettings.Value.DatabaseName);
-            _usersCollection = mongoDatabase.GetCollection<User>(storeDatabaseSettings.Value.UsersCollectionName);
-            _rabbitMQPublisher = new RabbitMQPublisher();
-        }
-
-        public async Task Invoke(HttpContext context)
-        {
-            var watch = Stopwatch.StartNew();
-            var requestTime = DateTime.Now;
-            try
-            {
-                string message = "[Request]  HTTP " + context.Request.Method + " - " + context.Request.Path;
-                Console.WriteLine(message);
-                await _next(context);
-                watch.Stop();
-                message = "[Response] HTTP " + context.Request.Method + " - " + context.Request.Path + " responded "
-                    + context.Response.StatusCode + " in " + watch.Elapsed.TotalMilliseconds + "ms";
-                Console.WriteLine(message);
-            }
-            catch (Exception ex)
-            {
-                watch.Stop();
-            }
-            finally
-            {
-            }
-        }
+        _next = next;
+        _accountService = accountService;
     }
 
-    public static class AuthorizationMiddlewareExtension
+    public async Task Invoke(HttpContext context,  TokenHelper _tokenHelper)
     {
-        public static IApplicationBuilder UseAuthorizationMiddleware(this IApplicationBuilder builder)
+        var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+        var userId = _tokenHelper.ValidateToken(token!);
+        Console.WriteLine("userId:" + userId);
+        if (userId != null)
         {
-            return builder.UseMiddleware<AuthorizationMiddleware>();
+            // attach user to context on successful jwt validation
+            context.Items["User"] = await _accountService.GetAsync(userId);
         }
+
+        await _next(context);
     }
 }

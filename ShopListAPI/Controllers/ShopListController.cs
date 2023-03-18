@@ -9,9 +9,9 @@ using ShopListAPI.Services;
 
 namespace ShopListAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]/")]
-[Authorize]
 public class ShopListController : ControllerBase
 {
     private readonly ShopListService _shopListService;
@@ -20,7 +20,7 @@ public class ShopListController : ControllerBase
         _shopListService = shopListService;
     }
 
-
+    [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<ActionResult> GetShopListById([FromRoute] string listId)
     {
@@ -28,6 +28,7 @@ public class ShopListController : ControllerBase
         return Ok(shopList);
     }
 
+    [Authorize(Roles = "HRManager,Finance")]
     [HttpGet]
     public async Task<ActionResult> GetShopLists([FromQuery] string userId)
     {

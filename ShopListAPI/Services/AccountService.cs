@@ -49,11 +49,11 @@ public class AccountService
 
         return existingUser;
     }
-    public async Task<Token> CreateTokenAsync(string userId)
+    public async Task<Token> CreateTokenAsync(User user)
     {
         TokenHelper tokenHelper = new(_configuration);
-        var token = tokenHelper.CreateAccessToken(userId);
-        await UpdateUserRefreshTokenAsync(userId, token.RefreshToken, token.ExpireDate.AddHours(12));
+        var token = tokenHelper.CreateAccessToken(user.Id);
+        await UpdateUserRefreshTokenAsync(user.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
     }
 
@@ -76,4 +76,5 @@ public class AccountService
         await UpdateUserRefreshTokenAsync(existingUser.Id, token.RefreshToken, token.ExpireDate.AddHours(12));
         return token;
     }
+
 }
