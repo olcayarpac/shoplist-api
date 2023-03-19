@@ -1,9 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using ShopListAPI.Middlewares;
 using ShopListAPI.Models;
 using ShopListAPI.Services;
 
@@ -15,9 +15,12 @@ namespace ShopListAPI.Controllers;
 public class ShopListController : ControllerBase
 {
     private readonly ShopListService _shopListService;
+    private readonly RabbitMQPublisher _rabbitMQPublisher;
     public ShopListController(ShopListService shopListService)
     {
         _shopListService = shopListService;
+        _rabbitMQPublisher = new RabbitMQPublisher();
+
     }
 
     [AllowAnonymous]
@@ -28,7 +31,7 @@ public class ShopListController : ControllerBase
         return Ok(shopList);
     }
 
-    [Authorize(Roles = "HRManager,Finance")]
+    [Authorize("User")]
     [HttpGet]
     public async Task<ActionResult> GetShopLists([FromQuery] string userId)
     {
@@ -68,7 +71,12 @@ public class ShopListController : ControllerBase
     public async Task<ActionResult> MarkListItemAsDone([FromRoute] string listId, [FromRoute] string itemId, [FromQuery] bool isDone)
     {
         var resultList = await _shopListService.UpdateItemDoneStatus(listId, itemId, isDone);
-        if (resultList.IsDone == true) return Ok("List updated as done");
+        if (resultList.IsDone == true)
+        {
+            // sent new event with rabbitmq
+            _rabbitMQPublisher.PublishDoneList("doneLists", resultList);
+        }
+
         return Ok();
     }
 }

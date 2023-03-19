@@ -58,9 +58,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<AuthMiddleware>();
-
 app.UseCustomExceptionMiddleware();
+app.UseAuthMiddlewareExtension();
 
 app.MapControllers();
 

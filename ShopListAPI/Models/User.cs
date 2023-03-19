@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -18,4 +19,8 @@ public class User
     public DateTime RefreshTokenExpireDate { get; set; }
     public string Role { get; set; } = "User";
 
+    public static explicit operator User(ClaimsPrincipal v)
+    {
+        throw new NotImplementedException();
+    }
 }

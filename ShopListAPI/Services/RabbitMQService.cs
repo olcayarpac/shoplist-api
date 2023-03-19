@@ -28,6 +28,11 @@ public class RabbitMQService
         }
         return null;
     }
+
+    public static implicit operator RabbitMQService(RabbitMQPublisher v)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class RabbitMQPublisher
@@ -44,11 +49,10 @@ public class RabbitMQPublisher
             _channel = _connection.CreateModel();
     }
 
-    public void Publish(string queueName, APILog apiLog)
+    public void PublishAPILog(string queueName, APILog apiLog)
     {
         try
         {
-
             _channel?.QueueDeclare(
                 queue: queueName,
                 durable: false,
@@ -57,6 +61,31 @@ public class RabbitMQPublisher
                 arguments: null);
 
             var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(apiLog));
+
+            _channel.BasicPublish(
+                exchange: string.Empty,
+                routingKey: queueName,
+                basicProperties: null,
+                body: body);
+        }
+        catch
+        {
+            Console.WriteLine("Cannot publish to rabbitmq!");
+        }
+    }
+
+    public void PublishDoneList(string queueName, ShopList shopList)
+    {
+        try
+        {
+            _channel?.QueueDeclare(
+                queue: queueName,
+                durable: false,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(shopList));
 
             _channel.BasicPublish(
                 exchange: string.Empty,

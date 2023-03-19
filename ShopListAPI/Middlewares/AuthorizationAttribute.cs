@@ -1,4 +1,4 @@
-namespace ShopListAPI.Authorization;
+namespace ShopListAPI.Middlewares;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,4 +30,5 @@ public class AuthorizeAttribute : Attribute, IAuthorizationFilter
             context.Result = new JsonResult(new { message = "Unauthorized" }) { StatusCode = StatusCodes.Status401Unauthorized };
         }
     }
+
 }

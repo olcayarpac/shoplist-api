@@ -32,8 +32,6 @@ public class AccountController : ControllerBase
         if (existingUser is null)
             return Unauthorized("Invalid credentials");
         var token = await _accountService.CreateTokenAsync(existingUser);
-
-        Response.Headers.Add("Set-Cookie", "userid=" + existingUser.Id + ";");
         return Ok(token);
     }
 

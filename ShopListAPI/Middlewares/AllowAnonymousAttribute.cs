@@ -1,4 +1,4 @@
-namespace ShopListAPI.Authorization;
+namespace ShopListAPI.Middlewares;
 
 [AttributeUsage(AttributeTargets.Method)]
 public class AllowAnonymousAttribute : Attribute

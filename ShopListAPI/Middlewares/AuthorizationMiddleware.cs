@@ -17,11 +17,10 @@ public class AuthMiddleware
         _accountService = accountService;
     }
 
-    public async Task Invoke(HttpContext context,  TokenHelper _tokenHelper)
+    public async Task Invoke(HttpContext context, TokenHelper _tokenHelper)
     {
         var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
         var userId = _tokenHelper.ValidateToken(token!);
-        Console.WriteLine("userId:" + userId);
         if (userId != null)
         {
             // attach user to context on successful jwt validation
@@ -29,5 +28,12 @@ public class AuthMiddleware
         }
 
         await _next(context);
+    }
+}
+public static class AuthMiddlewareExtension
+{
+    public static IApplicationBuilder UseAuthMiddlewareExtension(this IApplicationBuilder builder)
+    {
+        return builder.UseMiddleware<AuthMiddleware>();
     }
 }

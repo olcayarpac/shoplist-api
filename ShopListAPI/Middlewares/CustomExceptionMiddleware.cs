@@ -11,15 +11,11 @@ namespace StoreAPI.Middlewares
     public class CustomExceptionMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly IMongoCollection<APILog> _APILogsCollection;
         private readonly RabbitMQPublisher _rabbitMQPublisher;
 
-        public CustomExceptionMiddleware(RequestDelegate next, IOptions<DatabaseSettings> storeDatabaseSettings)
+        public CustomExceptionMiddleware(RequestDelegate next)
         {
             _next = next;
-            var mongoClient = new MongoClient(storeDatabaseSettings.Value.ConnectionString);
-            var mongoDatabase = mongoClient.GetDatabase(storeDatabaseSettings.Value.DatabaseName);
-            _APILogsCollection = mongoDatabase.GetCollection<APILog>(storeDatabaseSettings.Value.APILogsCollectionName);
             _rabbitMQPublisher = new RabbitMQPublisher();
         }
 
@@ -61,14 +57,15 @@ namespace StoreAPI.Middlewares
 
         private void WriteLogToDB(HttpContext context, DateTime requestTime, Stopwatch responseWatcher)
         {
-            APILog apiLog = new APILog();
-            apiLog.Endpoint = context.Request.Path;
-            apiLog.RequestTime = requestTime.ToString();
-            apiLog.ResponseDuration = responseWatcher.Elapsed.TotalMilliseconds.ToString();
-            apiLog.ResponseStatus = context.Response.StatusCode.ToString();
-            apiLog.RequestMethod = context.Request.Method;
-            _APILogsCollection.InsertOneAsync(apiLog);
-            _rabbitMQPublisher.Publish("apiLogs", apiLog);
+            APILog apiLog = new()
+            {
+                Endpoint = context.Request.Path,
+                RequestTime = requestTime.ToString(),
+                ResponseDuration = responseWatcher.Elapsed.TotalMilliseconds.ToString(),
+                ResponseStatus = context.Response.StatusCode.ToString(),
+                RequestMethod = context.Request.Method
+            };
+            _rabbitMQPublisher.PublishAPILog("apiLogs", apiLog);
         }
     }
 
